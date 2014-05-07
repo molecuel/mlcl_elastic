@@ -12,9 +12,9 @@ var elastic = function elastic() {
 elastic.prototype._registerEvents = function _registerEvents() {
   var self = this;
   // register on init function of core and create connection
-  molecuel.once('mlcl::core::init:post', function(molecuel) {
+  molecuel.on('mlcl::core::init:post', function(molecuel) {
     self.config = molecuel.config.search;
-    self.connect.call(self, function(err, connection) {
+    self.connect(function(err, connection) {
       if(err) {
         console.log(err);
       } else {
