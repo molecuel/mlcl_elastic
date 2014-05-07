@@ -10,6 +10,7 @@ var should = require('should'),
 describe('mlcl_elastic', function() {
   var mlcl;
   var molecuel;
+  var mongo;
 
   before(function(done) {
     // init fake molecuel
@@ -29,7 +30,7 @@ describe('mlcl_elastic', function() {
       type: 'mongodb',
       uri: 'mongodb://localhost/mlcl-elastic-unit'
     };
-    mlcl_database(molecuel);
+    mongo = mlcl_database(molecuel);
     mlcl_elastic(molecuel);
     done();
   });
@@ -37,19 +38,21 @@ describe('mlcl_elastic', function() {
   describe('elastic', function() {
     var searchcon;
     var dbcon;
-    it('should initialize search connection', function(done) {
-      molecuel.once('mlcl::search::connection:success', function(search) {
-        searchcon = search;
-        search.should.be.a.object;
+
+    it('should initialize db connection', function(done) {
+      molecuel.once('mlcl::database::connection:success', function(database) {
+        console.log(database);
+        dbcon = database;
+        database.should.be.a.object;
         done();
       });
       molecuel.emit('mlcl::core::init:post', molecuel);
     });
 
-    it('should initialize db connection', function(done) {
-      molecuel.once('mlcl::database::connection:success', function(database) {
-        dbcon = database;
-        database.should.be.a.object;
+    it('should initialize search connection', function(done) {
+      molecuel.once('mlcl::search::connection:success', function(search) {
+        searchcon = search;
+        search.should.be.a.object;
         done();
       });
       molecuel.emit('mlcl::core::init:post', molecuel);
