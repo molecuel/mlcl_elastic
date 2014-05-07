@@ -38,12 +38,12 @@ describe('mlcl_elastic', function() {
     var searchcon;
     var dbcon;
     it('should initialize search connection', function(done) {
-      molecuel.emit('mlcl::core::init:post', molecuel);
       molecuel.once('mlcl::search::connection:success', function(search) {
         searchcon = search;
         search.should.be.a.object;
         done();
       });
+      molecuel.emit('mlcl::core::init:post', molecuel);
     });
 
     it('should initialize db connection', function(done) {
@@ -52,6 +52,7 @@ describe('mlcl_elastic', function() {
         database.should.be.a.object;
         done();
       });
+      molecuel.emit('mlcl::core::init:post', molecuel);
     });
 
     it('should initialize schema plugin', function(done) {
