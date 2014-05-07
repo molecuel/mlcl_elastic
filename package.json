@@ -1,0 +1,41 @@
+{
+  "name": "mlcl_elastic",
+  "dependencies": {
+    "mongolastic": ">=0.0.1"
+  },
+  "version": "0.5.0",
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [
+    "molecuel",
+    "elasticsearch",
+    "cms"
+  ],
+  "devDependencies": {
+    "mocha": "*",
+    "should": ">= 0.0.1",
+    "assert": ">=0.0.1",
+    "mongoose": ">=0.0.1",
+    "mocha-jshint": ">=0.0.1",
+    "mlcl_database": ">=0.0.1"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "description": "molecuel CMS - elasticsearch core module",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/molecuel/mlcl_elastic.git"
+  },
+  "author": "Dominic Böttger <Dominic.Boettger@inspirationlabs.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/molecuel/mlcl_elastic/issues"
+  },
+  "homepage": "https://github.com/molecuel/mlcl_elastic"
+}
