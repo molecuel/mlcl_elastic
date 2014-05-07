@@ -47,6 +47,7 @@ describe('mlcl_elastic', function() {
     });
 
     it('should initialize db connection', function(done) {
+      this.timeout(10000);
       molecuel.once('mlcl::database::connection:success', function(database) {
         dbcon = database;
         database.should.be.a.object;
