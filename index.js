@@ -48,6 +48,34 @@ elastic.prototype.connect = function connect(callback) {
 };
 
 /**
+ * Index the object
+ * @param modelname
+ * @param entry
+ * @param callback
+ */
+elastic.prototype.index = function index(modelname, entry, callback) {
+  mongolastic.index(modelname, entry, callback);
+};
+
+/**
+ * Delete function for objects
+ * @param modelname
+ * @param entry
+ * @param callback
+ */
+elastic.prototype.delete = function(modelname, entry, callback) {
+  mongolastic.delete(modelname, entry, callback);
+};
+
+/**
+ * Delete Index from elasticsearch
+ * @param callback
+ */
+elastic.prototype.deleteIndex = function connect(modelname, callback) {
+  mongolastic.deleteIndex(modelname, callback);
+};
+
+/**
  * Singleton getInstance definition
  * @return singleton class
  */
