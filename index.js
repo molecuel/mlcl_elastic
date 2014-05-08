@@ -76,6 +76,16 @@ elastic.prototype.deleteIndex = function connect(modelname, callback) {
 };
 
 /**
+ * Sync function for data model
+ * @param model
+ * @param modelname
+ * @param callback
+ */
+elastic.prototype.sync = function sync(model, modelname, callback) {
+  mongolastic.sync(model, modelname, callback);
+};
+
+/**
  * Singleton getInstance definition
  * @return singleton class
  */
