@@ -95,7 +95,10 @@ describe('mlcl_elastic', function() {
       searchcon.index('test', testobjEn, function(error, result) {
         should.not.exists(error);
         result.should.be.a.object;
-        done();
+        // timeout before reading the data
+        setTimeout(function() {
+          done();
+        }, 1000);
       });
     });
 
@@ -130,11 +133,10 @@ describe('mlcl_elastic', function() {
     });
 
     after(function(done) {
-      searchcon.deleteIndex('mlcl-elastic-unit*', function(error) {
+      searchcon.deleteIndex('*', function(error) {
         should.not.exists(error);
         done();
       });
     });
-
   });
 });
