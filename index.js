@@ -86,6 +86,60 @@ elastic.prototype.sync = function sync(model, modelname, callback) {
 };
 
 /**
+ * Search for objects in elasticsearch
+ * @param query
+ * @param callback
+ */
+elastic.prototype.search = function search(query, callback) {
+  mongolastic.search(query, callback);
+};
+
+/**
+ * Gets a entry by url and language
+ * @param url
+ * @param lang
+ */
+elastic.prototype.getByUrl = function(url, lang, callback) {
+  this.search({
+    body: {
+      query: {
+        filtered : {
+          query : {
+            match : { url : url }
+          },
+          filter : {
+            term : {
+              lang : lang
+            }
+          }
+        }
+      }
+    }
+  }, callback);
+};
+
+/**
+ * Get a object by id
+ * @param id
+ * @param callback
+ */
+elastic.prototype.getById = function getById(id, callback) {
+  this.search({
+    body: {
+      query: {
+        filtered : {
+          filter : {
+            term : {
+              _id : id
+            }
+          }
+        }
+      }
+    }
+  }, callback);
+};
+
+/**
  * Singleton getInstance definition
  * @return singleton class
  */
