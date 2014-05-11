@@ -109,12 +109,17 @@ elastic.prototype.search = function search(query, callback) {
  * @param lang
  */
 elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
-  this.search({
+  getInstance().search({
     body: {
       query: {
         filtered : {
           query : {
-            match : { url : url }
+            query_string: {
+              default_field : 'url',
+              query : url.replace(/\//g, '\\/'),
+              phrase_slop: 0,
+              default_operator: 'AND'
+            }
           },
           filter : {
             term : {
@@ -126,7 +131,6 @@ elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
     }
   }, callback);
 };
-
 /**
  * Get a object by id
  * @param id
