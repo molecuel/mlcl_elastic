@@ -9,6 +9,15 @@ var elastic = function elastic() {
   this._registerEvents();
 };
 
+/////////////////////
+// singleton stuff
+////////////////////
+var instance = null;
+
+var getInstance = function(){
+  return instance || (instance = new elastic());
+};
+
 elastic.prototype._registerEvents = function _registerEvents() {
   var self = this;
   // register on init function of core and create connection
@@ -28,7 +37,7 @@ elastic.prototype._registerEvents = function _registerEvents() {
   // this is used to register the plugin to the schema
   molecuel.on('mlcl::database::registerModel:pre', function(database, modelname, schema, options) {
     if(options.indexable) {
-      schema.plugin(mongolastic.plugin, {modelname: modelname});
+      schema.plugin(self.plugin, {modelname: modelname});
       molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
     }
   });
@@ -99,7 +108,7 @@ elastic.prototype.search = function search(query, callback) {
  * @param url
  * @param lang
  */
-elastic.prototype.getByUrl = function(url, lang, callback) {
+elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
   this.search({
     body: {
       query: {
@@ -123,7 +132,7 @@ elastic.prototype.getByUrl = function(url, lang, callback) {
  * @param id
  * @param callback
  */
-elastic.prototype.getById = function getById(id, callback) {
+elastic.prototype.searchById = function searchById(id, callback) {
   this.search({
     body: {
       query: {
@@ -140,19 +149,23 @@ elastic.prototype.getById = function getById(id, callback) {
 };
 
 /**
- * Singleton getInstance definition
- * @return singleton class
+ * Extended mongoose plugin
+ * @param schema
+ * @param options
  */
-elastic.getInstance = function(){
-  if(this.instance === null){
-    this.instance = new elastic();
-  }
-  return this.instance;
+elastic.prototype.plugin = function plugin(schema, options) {
+  schema.plugin(mongolastic.plugin, options);
+
+  var mylastic = getInstance();
+
+  schema.statics.searchByUrl = mylastic.searchByUrl;
+  schema.statics.searchById = mylastic.searchById;
+
 };
 
 function init(m) {
   molecuel = m;
-  return elastic.getInstance();
+  return getInstance();
 }
 
 module.exports = init;

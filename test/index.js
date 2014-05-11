@@ -54,6 +54,8 @@ describe('mlcl_elastic', function() {
   describe('elastic', function() {
     var searchcon;
     var dbcon;
+    var model;
+    var mongoobj;
 
     it('should initialize db connection', function(done) {
       molecuel.once('mlcl::database::connection:success', function(database) {
@@ -76,10 +78,14 @@ describe('mlcl_elastic', function() {
     it('should initialize schema plugin', function(done) {
       var Schema = dbcon.database.Schema;
       var testSchema = new Schema({
-        name: {type: String}
+        name: {type: String},
+        url: {type: String},
+        lang: {type: String}
       });
-      var model = dbcon.registerModel('test', testSchema, {indexable:true});
+      model = dbcon.registerModel('test', testSchema, {indexable:true});
       model.schema.methods.search.should.be.a.function;
+      model.schema.statics.searchById.should.be.a.function;
+      model.schema.statics.searchByUrl.should.be.a.function;
       done();
     });
 
@@ -103,7 +109,7 @@ describe('mlcl_elastic', function() {
     });
 
     it('should get german object by URL', function(done) {
-      searchcon.getByUrl(testobjDe.url, testobjDe.lang, function(error, result) {
+      searchcon.searchByUrl(testobjDe.url, testobjDe.lang, function(error, result) {
         should.not.exists(error);
         result.should.be.a.object;
         should.exists(result.hits.hits[0]);
@@ -113,7 +119,7 @@ describe('mlcl_elastic', function() {
     });
 
     it('should get english object by URL', function(done) {
-      searchcon.getByUrl(testobjEn.url, testobjEn.lang, function(error, result) {
+      searchcon.searchByUrl(testobjEn.url, testobjEn.lang, function(error, result) {
         should.not.exists(error);
         result.should.be.a.object;
         should.exists(result.hits.hits[0]);
@@ -123,7 +129,34 @@ describe('mlcl_elastic', function() {
     });
 
     it('should get a object by id', function(done) {
-      searchcon.getById('123456', function(error, result) {
+      searchcon.searchById('123456', function(error, result) {
+        should.not.exists(error);
+        result.should.be.a.object;
+        should.exists(result.hits.hits[0]);
+        result.hits.hits[0].should.be.a.object;
+        done();
+      });
+    });
+
+    it('should save to mongodb', function(done) {
+      mongoobj = new model({
+        name: 'testname',
+        url: '/mytesturl',
+        lang: 'de'
+      });
+
+      mongoobj.save(function(error, result) {
+        should.not.exists(error);
+        result.should.be.a.object;
+        // timeout before reading the data
+        setTimeout(function() {
+          done();
+        }, 1000);
+      });
+    });
+
+    it('should search by db connection static function', function(done) {
+      searchcon.searchByUrl(mongoobj.url, mongoobj.lang, function(error, result) {
         should.not.exists(error);
         result.should.be.a.object;
         should.exists(result.hits.hits[0]);
@@ -133,9 +166,12 @@ describe('mlcl_elastic', function() {
     });
 
     after(function(done) {
-      searchcon.deleteIndex('*', function(error) {
+      dbcon.database.connection.db.dropDatabase(function(error) {
         should.not.exists(error);
-        done();
+        searchcon.deleteIndex('*', function(error) {
+          should.not.exists(error);
+          done();
+        });
       });
     });
   });

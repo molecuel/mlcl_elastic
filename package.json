@@ -1,7 +1,7 @@
 {
   "name": "mlcl_elastic",
   "dependencies": {
-    "mongolastic": ">=0.6.2"
+    "mongolastic": ">=0.7.1"
   },
   "version": "0.5.2",
   "engines": {
