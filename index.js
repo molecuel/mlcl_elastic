@@ -165,6 +165,8 @@ elastic.prototype.plugin = function plugin(schema, options) {
   schema.statics.searchByUrl = mylastic.searchByUrl;
   schema.statics.searchById = mylastic.searchById;
 
+  schema.methods.searchByUrl = mylastic.searchByUrl;
+  schema.methods.searchById = mylastic.searchById;
 };
 
 function init(m) {
