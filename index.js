@@ -122,9 +122,18 @@ elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
             }
           },
           filter : {
-            term : {
-              lang : lang
-            }
+            or: [
+              {
+                term : {
+                  lang : lang
+                }
+              },
+              {
+                missing: {
+                  field: 'lang'
+                }
+              }
+            ]
           }
         }
       }
