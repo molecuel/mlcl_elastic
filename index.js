@@ -37,8 +37,10 @@ elastic.prototype._registerEvents = function _registerEvents() {
   // this is used to register the plugin to the schema
   molecuel.on('mlcl::database::registerModel:pre', function(database, modelname, schema, options) {
     if(options.indexable) {
-      schema.plugin(self.plugin, {modelname: modelname});
-      molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
+      self.ensureIndex(modelname, function(err, result) {
+        schema.plugin(self.plugin, {modelname: modelname});
+        molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
+      });
     }
   });
 };
@@ -56,6 +58,46 @@ elastic.prototype.connect = function connect(callback) {
   mongolastic.connect(this.config.prefix, this.config.options, callback);
 };
 
+/**
+ * Checks if the index for given modelname exists and if not creates it with "default" mapping settings
+ *
+ * @param modelname
+ * @param callback
+ * @todo make settings/mappings configurable
+ */
+elastic.prototype.ensureIndex = function ensureIndex(modelname, callback) {
+  //check if index already exists
+  mongolastic.indices.exists(modelname, function(err, exists) {
+    if(!exists) {
+      var mappings = {};  //@todo: get specific mapping information from model definition or cenral config?
+      mappings[modelname] = {
+        properties: {
+          url: {
+            type: 'string', index: 'not_analyzed' // by default url information must be not_analyzed,
+          }                                                  // maybe we should go with this solution:
+        // http://joelabrahamsson.com/elasticsearch-101/"type": "multi_field",
+          /*url: {
+            "fields": {
+              "url": {"type": "string"},
+              "original": {"type" : "string", "index" : "not_analyzed"}
+            }
+          }*/
+        }
+      }
+      var settings = {}; //@todo: make settings configurable from model definition or central config?
+      mongolastic.indices.create(modelname, settings, mappings, function(err, res) {
+        if(err) {
+          console.log(err);
+        } else {
+          console.log(res);
+        }
+      });
+      callback();
+    } else {
+      callback();
+    }
+  });
+}
 /**
  * Index the object
  * @param modelname
