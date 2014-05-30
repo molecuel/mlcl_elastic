@@ -86,7 +86,9 @@ describe('mlcl_elastic', function() {
         schema.methods.search.should.be.a.function;
         schema.statics.searchById.should.be.a.function;
         schema.statics.searchByUrl.should.be.a.function;
-        done();
+        setTimeout(function() {
+          done();
+        }, 1000);
       });
       model = dbcon.registerModel('test', testSchema, {indexable:true});
     });
