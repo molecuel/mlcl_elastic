@@ -154,32 +154,30 @@ elastic.prototype.search = function search(query, callback) {
 elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
   getInstance().search({
     body: {
-      query: {
-        filtered : {
-          filter : {
-            and: [
+      from: 0,
+      size: 1,
+      filter : {
+        and: [
+          {
+            term: {
+              url: url
+            }
+          },
+          {
+            or: [
               {
-                term: {
-                  url: url
+                term : {
+                  lang : lang
                 }
               },
               {
-                or: [
-                  {
-                    term : {
-                      lang : lang
-                    }
-                  },
-                  {
-                    missing: {
-                      field: 'lang'
-                    }
-                  }
-                ]
+                missing: {
+                  field: 'lang'
+                }
               }
             ]
           }
-        }
+        ]
       }
     }
   }, callback);

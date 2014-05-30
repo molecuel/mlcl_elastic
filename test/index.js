@@ -82,13 +82,13 @@ describe('mlcl_elastic', function() {
         url: {type: String},
         lang: {type: String}
       });
-      model = dbcon.registerModel('test', testSchema, {indexable:true});
       molecuel.on('mlcl::elastic::registerPlugin:post',function(el, modelname, schema) {
         schema.methods.search.should.be.a.function;
         schema.statics.searchById.should.be.a.function;
         schema.statics.searchByUrl.should.be.a.function;
         done();
       });
+      model = dbcon.registerModel('test', testSchema, {indexable:true});
     });
 
     it('should add german object to the index', function(done) {
