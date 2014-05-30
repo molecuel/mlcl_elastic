@@ -37,10 +37,9 @@ elastic.prototype._registerEvents = function _registerEvents() {
   // this is used to register the plugin to the schema
   molecuel.on('mlcl::database::registerModel:pre', function(database, modelname, schema, options) {
     if(options.indexable) {
-      self.ensureIndex(modelname, function() {
-        schema.plugin(self.plugin, {modelname: modelname});
-        molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
-      });
+      self.ensureIndex(modelname, function() {});
+      schema.plugin(self.plugin, {modelname: modelname});
+      molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
     }
   });
 };
