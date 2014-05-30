@@ -156,25 +156,26 @@ elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
     body: {
       query: {
         filtered : {
-          query : {
-            query_string: {
-              default_field : 'url',
-              query : url.replace(/\//g, '\\/'),
-              phrase_slop: 0,
-              default_operator: 'AND'
-            }
-          },
           filter : {
-            or: [
+            and: [
               {
-                term : {
-                  lang : lang
+                term: {
+                  url: url
                 }
               },
               {
-                missing: {
-                  field: 'lang'
-                }
+                or: [
+                  {
+                    term : {
+                      lang : lang
+                    }
+                  },
+                  {
+                    missing: {
+                      field: 'lang'
+                    }
+                  }
+                ]
               }
             ]
           }
