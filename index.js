@@ -37,7 +37,7 @@ elastic.prototype._registerEvents = function _registerEvents() {
   // this is used to register the plugin to the schema
   molecuel.on('mlcl::database::registerModel:pre', function(database, modelname, schema, options) {
     if(options.indexable) {
-      self.ensureIndex(modelname, function(err, result) {
+      self.ensureIndex(modelname, function() {
         schema.plugin(self.plugin, {modelname: modelname});
         molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
       });
@@ -69,13 +69,16 @@ elastic.prototype.ensureIndex = function ensureIndex(modelname, callback) {
   //check if index already exists
   mongolastic.indices.exists(modelname, function(err, exists) {
     if(!exists) {
-      var mappings = {};  //@todo: get specific mapping information from model definition or cenral config?
+      //@todo: get specific mapping information from model definition or central config?
+      var mappings = {};
       mappings[modelname] = {
         properties: {
           url: {
-            type: 'string', index: 'not_analyzed' // by default url information must be not_analyzed,
-          }                                                  // maybe we should go with this solution:
-        // http://joelabrahamsson.com/elasticsearch-101/"type": "multi_field",
+            type: 'string',
+            index: 'not_analyzed' // by default url information must be not_analyzed,
+          }
+          // maybe we should go with this solution:
+          // http://joelabrahamsson.com/elasticsearch-101/"type": "multi_field",
           /*url: {
             "fields": {
               "url": {"type": "string"},
@@ -83,13 +86,11 @@ elastic.prototype.ensureIndex = function ensureIndex(modelname, callback) {
             }
           }*/
         }
-      }
+      };
       var settings = {}; //@todo: make settings configurable from model definition or central config?
-      mongolastic.indices.create(modelname, settings, mappings, function(err, res) {
+      mongolastic.indices.create(modelname, settings, mappings, function(err) {
         if(err) {
           console.log(err);
-        } else {
-          console.log(res);
         }
       });
       callback();
@@ -97,7 +98,7 @@ elastic.prototype.ensureIndex = function ensureIndex(modelname, callback) {
       callback();
     }
   });
-}
+};
 /**
  * Index the object
  * @param modelname
