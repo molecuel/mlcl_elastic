@@ -54,7 +54,8 @@ elastic.instance = null;
  * @param callback
  */
 elastic.prototype.connect = function connect(callback) {
-  mongolastic.connect(this.config.prefix, this.config.options, callback);
+  var elast = getInstance();
+  mongolastic.connect(elast.config.prefix, elast.config, callback);
 };
 
 /**
