@@ -57,6 +57,10 @@ elastic.prototype.connect = function connect(callback) {
   mongolastic.connect(this.config.prefix, this.config.options, callback);
 };
 
+elastic.prototype.indexNameFromModel = function(modelname) {
+  return this.config.prefix + '-' + modelname.toLowerCase();
+};
+
 /**
  * Checks if the index for given modelname exists and if not creates it with "default" mapping settings
  *
