@@ -80,7 +80,16 @@ elastic.prototype.ensureIndex = function ensureIndex(modelname, callback) {
           url: {
             type: 'string',
             index: 'not_analyzed' // by default url information must be not_analyzed,
+          },
+          'location': {
+            'properties': {
+              geo: {
+                type: 'geo_point',
+                'lat_lon': true
+              }
+            }
           }
+          /*}*/
           // maybe we should go with this solution:
           // http://joelabrahamsson.com/elasticsearch-101/"type": "multi_field",
           /*url: {
