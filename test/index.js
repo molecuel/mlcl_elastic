@@ -78,7 +78,7 @@ describe('mlcl_elastic', function() {
       var Schema = dbcon.database.Schema;
       var testSchema = new Schema({
         name: {type: String},
-        url: {type: String},
+        url: {type: String, elastic: {mapping: {type: 'string', index: 'not_analyzed'}}},
         lang: {type: String}
       });
       molecuel.on('mlcl::elastic::registerPlugin:post',function(el, modelname, schema) {
