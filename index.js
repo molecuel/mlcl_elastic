@@ -38,7 +38,8 @@ elastic.prototype._registerEvents = function _registerEvents() {
   molecuel.on('mlcl::database::registerModel:pre', function(database, modelname, schema, options) {
     if(options.indexable) {
       //self.ensureIndex(modelname, function() {});
-      schema.plugin(self.plugin, {modelname: modelname});
+      options.modelname = modelname;
+      schema.plugin(self.plugin, options);
       molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
     }
   });
