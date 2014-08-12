@@ -168,7 +168,46 @@ describe('mlcl_elastic', function() {
       });
     });
 
+    it('should create a new index with a mapping', function(done) {
+      var mapping = {
+        'tweet': {
+          '_ttl' : { 'enabled' : true, 'default': '10s' }
+        }
+      };
+      searchcon.checkCreateIndex('tweet', {}, mapping, function(error) {
+        should.not.exists(error);
+        done();
+      });
+    });
+
+    it('should read the created mapping', function(done) {
+      searchcon.getMapping('tweet', function(error, result) {
+        should.not.exists(error);
+        result['mlcl-elastic-unit-tweet'].mappings.tweet._ttl.enabled.should.be.ok;
+        done();
+      });
+    });
+
+    it('should save with ttl', function(done) {
+      searchcon.index('tweet', testobjDe, function(error, result) {
+        should.not.exists(error);
+        result.should.be.a.object;
+        setTimeout(function() {
+          done();
+        }, 1000);
+      });
+    });
+
+    it('should find the ttl object', function(done) {
+      searchcon.search({index: 'tweet'}, function(error, result) {
+        should.not.exists(error);
+        result.should.be.a.object;
+        done();
+      });
+    });
+
     after(function(done) {
+      done();
       dbcon.database.connection.db.dropDatabase(function(error) {
         should.not.exists(error);
         searchcon.deleteIndex('*', function(error) {

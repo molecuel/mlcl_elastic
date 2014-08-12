@@ -163,6 +163,10 @@ elastic.prototype.sync = function sync(model, modelname, callback) {
  * @param callback
  */
 elastic.prototype.search = function search(query, callback) {
+  var elast = getInstance();
+  if(query && query.index) {
+    query.index = elast.getIndexName(query.index);
+  }
   mongolastic.search(query, callback);
 };
 
@@ -202,6 +206,7 @@ elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
     }
   }, callback);
 };
+
 /**
  * Get a object by id
  * @param id
@@ -224,6 +229,70 @@ elastic.prototype.searchById = function searchById(id, callback) {
 };
 
 /**
+ * Return a boolean indicating whether index exists
+ *
+ * @param indexname
+ * @param callback
+ * @see http://www.elasticsearch.org/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-indices-exists
+ */
+elastic.prototype.exists = function(indexname, callback) {
+  var elast = getInstance();
+  elast.connection.indices.exists({
+    index: elast.getIndexName(indexname),
+  }, callback);
+};
+
+
+/**
+ * Create an index in Elasticsearch.
+ *
+ * @param indexname
+ * @param settings
+ * @param mappings
+ * @param callback
+ * @see http://www.elasticsearch.org/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-indices-create
+ */
+elastic.prototype.create = function(indexname, settings, mappings, callback) {
+  var elast = getInstance();
+  elast.connection.indices.create({
+    index: elast.getIndexName(indexname),
+    body: {
+      settings: settings,
+      mappings: mappings
+    }
+  }, callback);
+};
+
+/**
+ * Check if the index exists and create a new one
+ * @param model
+ * @param callback
+ */
+elastic.prototype.checkCreateIndex = function checkCreateIndex(indexname, settings, mappings, callback) {
+  var elast = getInstance();
+  elast.exists(indexname, function(err, response) {
+    if(!response) {
+      elast.create(indexname, settings, mappings, function (err) {
+        callback(err, true);
+      });
+    } else {
+      callback(err, false);
+    }
+  });
+};
+
+/**
+ * Get the mapping
+ * @param
+ */
+elastic.prototype.getMapping = function getMapping(indexname, callback) {
+  var elast = getInstance();
+  elast.connection.indices.getMapping({
+    index: elast.getIndexName(indexname)
+  }, callback);
+};
+
+/**
  * Extended mongoose plugin
  * @param schema
  * @param options
@@ -238,6 +307,20 @@ elastic.prototype.plugin = function plugin(schema, options) {
 
   schema.methods.searchByUrl = mylastic.searchByUrl;
   schema.methods.searchById = mylastic.searchById;
+};
+
+/**
+ * Helper for hamornising namespaces
+ * @param modelname
+ * @returns {string}
+ */
+elastic.prototype.getIndexName = function(name) {
+  var elast = getInstance();
+  if(elast.config.prefix) {
+    return elast.config.prefix + '-' + name.toLowerCase();
+  } else {
+    return name.toLowerCase();
+  }
 };
 
 function init(m) {
