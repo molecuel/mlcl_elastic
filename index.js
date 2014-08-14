@@ -314,10 +314,10 @@ elastic.prototype.plugin = function plugin(schema, options) {
 elastic.prototype.getIndexName = function(name) {
   var elast = getInstance();
   if(elast.config.prefix) {
-    if(!name.indexOf(mlelast.prefix+'-') == 0) {
-      return elast.config.prefix + '-' + name.toLowerCase();
-    } else {
+    if(name.indexOf(elast.prefix+'-') === 0) {
       return name.toLowerCase();
+    } else {
+      return elast.config.prefix + '-' + name.toLowerCase();
     }
   } else {
     return name.toLowerCase();

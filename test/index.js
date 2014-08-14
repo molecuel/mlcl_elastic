@@ -207,7 +207,6 @@ describe('mlcl_elastic', function() {
     });
 
     after(function(done) {
-      done();
       dbcon.database.connection.db.dropDatabase(function(error) {
         should.not.exists(error);
         searchcon.deleteIndex('*', function(error) {
