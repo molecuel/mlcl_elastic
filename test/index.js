@@ -2,6 +2,7 @@
  * Created by dob on 20.11.13.
  */
 var should = require('should'),
+  assert = require('assert'),
   util = require('util'),
   EventEmitter = require('events').EventEmitter,
   mlcl_database = require('mlcl_database'),
@@ -204,6 +205,12 @@ describe('mlcl_elastic', function() {
         result.should.be.a.object;
         done();
       });
+    });
+
+    it('should return the correct prefix', function(done) {
+      assert.equal(searchcon.getIndexName('model'), 'mlcl-elastic-unit-model');
+      assert.equal(searchcon.getIndexName('mlcl-elastic-unit-model'), 'mlcl-elastic-unit-model');
+      done();
     });
 
     after(function(done) {

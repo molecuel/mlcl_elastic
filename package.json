@@ -1,6 +1,6 @@
 {
   "name": "mlcl_elastic",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "dependencies": {
     "mongolastic": ">=0.6.0"
   },

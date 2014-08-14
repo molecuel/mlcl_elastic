@@ -314,7 +314,7 @@ elastic.prototype.plugin = function plugin(schema, options) {
 elastic.prototype.getIndexName = function(name) {
   var elast = getInstance();
   if(elast.config.prefix) {
-    if(name.indexOf(elast.prefix+'-') === 0) {
+    if(name.indexOf(elast.config.prefix+'-') === 0) {
       return name.toLowerCase();
     } else {
       return elast.config.prefix + '-' + name.toLowerCase();
