@@ -66,10 +66,6 @@ elastic.prototype.connect = function connect(callback) {
   mongolastic.connect(elast.config.prefix, elast.config, callback);
 };
 
-elastic.prototype.indexNameFromModel = function(modelname) {
-  return this.config.prefix + '-' + modelname.toLowerCase();
-};
-
 /**
  * Checks if the index for given modelname exists and if not creates it with "default" mapping settings
  *
@@ -318,7 +314,11 @@ elastic.prototype.plugin = function plugin(schema, options) {
 elastic.prototype.getIndexName = function(name) {
   var elast = getInstance();
   if(elast.config.prefix) {
-    return elast.config.prefix + '-' + name.toLowerCase();
+    if(!name.indexOf(mlelast.prefix+'-') == 0) {
+      return elast.config.prefix + '-' + name.toLowerCase();
+    } else {
+      return name.toLowerCase();
+    }
   } else {
     return name.toLowerCase();
   }
