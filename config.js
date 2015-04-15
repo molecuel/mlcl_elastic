@@ -1,7 +1,7 @@
 var config;
 
 config = {
-  name: 'elastic'
+    name: 'elastic'
 };
 
 module.exports = config;

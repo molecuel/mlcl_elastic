@@ -1,332 +1,269 @@
-/***
- * Molecuel CMS - Elasticsearch integration module
- * @type {exports}
- */
+/// <reference path="./typings/node/node.d.ts"/>
+/// <reference path="./typings/mongolastic/mongolastic.d.ts"/>
+/// <reference path="./typings/async/async.d.ts"/>
 var mongolastic = require('mongolastic');
-var molecuel;
-
-var elastic = function elastic() {
-  this._registerEvents();
-};
-
-/////////////////////
-// singleton stuff
-////////////////////
-var instance = null;
-
-var getInstance = function(){
-  return instance || (instance = new elastic());
-};
-
-elastic.prototype._registerEvents = function _registerEvents() {
-  var self = this;
-  // register on init function of core and create connection
-  molecuel.on('mlcl::core::init:post', function(molecuel) {
-    self.config = molecuel.config.search;
-    self.connect(function(err, connection) {
-      if(err) {
-        console.log(err);
-      } else {
-        self.connection = connection;
-        molecuel.emit('mlcl::search::connection:success', self);
-      }
-    });
-  });
-
-  // Schema creation event
-  // this is used to register the plugin to the schema
-  molecuel.on('mlcl::database::registerModel:pre', function(database, modelname, schema, options) {
-    if(options.indexable) {
-      //self.ensureIndex(modelname, function() {});
-      options.modelname = modelname;
-      schema.plugin(self.plugin, options);
-      molecuel.emit('mlcl::elastic::registerPlugin:post', self, modelname, schema);
-    }
-  });
-
-  molecuel.on('mlcl::database::registerModel:post', function(database, modelname, model) {
-    // returns err and model
-    mongolastic.registerModel(model, function() {
-      //@todo Error log
-    });
-  });
-};
-
-/* ************************************************************************
- SINGLETON CLASS DEFINITION
- ************************************************************************ */
-elastic.instance = null;
-
-/**
- * Connect the instance to elastic
- * @param callback
- */
-elastic.prototype.connect = function connect(callback) {
-  var elast = getInstance();
-  mongolastic.connect(elast.config.prefix, elast.config, callback);
-};
-
-/**
- * Checks if the index for given modelname exists and if not creates it with "default" mapping settings
- *
- * @param modelname
- * @param callback
- * @todo make settings/mappings configurable
- */
-elastic.prototype.ensureIndex = function ensureIndex(modelname, callback) {
-  //check if index already exists
-  mongolastic.indices.exists(modelname, function(err, exists) {
-    if(!exists) {
-      //@todo: get specific mapping information from model definition or central config?
-      var mappings = {};
-      mappings[modelname] = {
-        properties: {
-          url: {
-            type: 'string',
-            index: 'not_analyzed' // by default url information must be not_analyzed,
-          },
-          'location': {
-            'properties': {
-              geo: {
-                type: 'geo_point',
-                'lat_lon': true
-              }
-            }
-          }
-          /*}*/
-          // maybe we should go with this solution:
-          // http://joelabrahamsson.com/elasticsearch-101/"type": "multi_field",
-          /*url: {
-            "fields": {
-              "url": {"type": "string"},
-              "original": {"type" : "string", "index" : "not_analyzed"}
-            }
-          }*/
+var async = require('async');
+var mlcl_elastic = (function () {
+    function mlcl_elastic() {
+        var _this = this;
+        if (mlcl_elastic._instance) {
+            throw new Error("Error: Instantiation failed. Singleton module! Use .getInstance() instead of new.");
         }
-      };
-      var settings = {}; //@todo: make settings configurable from model definition or central config?
-      mongolastic.indices.create(modelname, settings, mappings, function(err) {
-        if(err) {
-          console.log(err);
-        }
-      });
-      callback();
-    } else {
-      callback();
-    }
-  });
-};
-/**
- * Index the object
- * @param modelname
- * @param entry
- * @param callback
- */
-elastic.prototype.index = function index(modelname, entry, callback) {
-  mongolastic.index(modelname, entry, callback);
-};
-
-/**
- * Delete function for objects
- * @param modelname
- * @param entry
- * @param callback
- */
-elastic.prototype.delete = function(modelname, entry, callback) {
-  mongolastic.delete(modelname, entry, callback);
-};
-
-/**
- * Delete Index from elasticsearch
- * @param callback
- */
-elastic.prototype.deleteIndex = function connect(modelname, callback) {
-  mongolastic.deleteIndex(modelname, callback);
-};
-
-/**
- * Sync function for data model
- * @param model
- * @param modelname
- * @param callback
- */
-elastic.prototype.sync = function sync(model, modelname, callback) {
-  mongolastic.sync(model, modelname, callback);
-};
-
-/**
- * Search for objects in elasticsearch
- * @param query
- * @param callback
- */
-elastic.prototype.search = function search(query, callback) {
-  var elast = getInstance();
-  if(query && query.index) {
-    query.index = elast.getIndexName(query.index);
-  }
-  mongolastic.search(query, callback);
-};
-
-/**
- * Gets a entry by url and language
- * @param url
- * @param lang
- */
-elastic.prototype.searchByUrl = function searchByUrl(url, lang, callback) {
-  getInstance().search({
-    body: {
-      from: 0,
-      size: 1,
-      filter : {
-        and: [
-          {
-            term: {
-              url: url
+        this.log = console.log;
+        mlcl_elastic._instance = this;
+        mlcl_elastic.molecuel.on('mlcl::core::init:post', function (molecuel) {
+            _this.config = molecuel.config.search;
+            if (molecuel.log) {
+                _this.log = molecuel.log;
             }
-          },
-          {
-            or: [
-              {
-                term : {
-                  lang : lang
+        });
+        mlcl_elastic.molecuel.on('mlcl::queue::init:post', function (queue) {
+            _this.queue = queue;
+            _this.connect(function (err, connection) {
+                if (err) {
+                    _this.log('mlcl_elastic', 'Error while connecting' + err);
                 }
-              },
-              {
-                missing: {
-                  field: 'lang'
+                else {
+                    _this.connection = connection;
+                    mlcl_elastic.molecuel.emit('mlcl::search::connection:success', _this);
                 }
-              }
-            ]
-          }
-        ]
-      }
-    }
-  }, callback);
-};
-
-/**
- * Get a object by id
- * @param id
- * @param callback
- */
-elastic.prototype.searchById = function searchById(id, callback) {
-  this.search({
-    body: {
-      query: {
-        filtered : {
-          filter : {
-            term : {
-              _id : id
+            });
+        });
+        mlcl_elastic.molecuel.on('mlcl::database::registerModel:pre', function (database, modelname, schema, options) {
+            if (options.indexable) {
+                options.modelname = modelname;
+                schema.plugin(_this.plugin, options);
+                mlcl_elastic.molecuel.emit('mlcl::elastic::registerPlugin:post', _this, modelname, schema);
             }
-          }
+        });
+        mlcl_elastic.molecuel.on('mlcl::database::registerModel:post', function (database, modelname, model) {
+            mongolastic.registerModel(model, function (err) {
+                if (err) {
+                    _this.log('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
+                }
+                else {
+                    var qname = 'mlcl::elastic::' + modelname + ':resync';
+                    var chan = _this.queue.getChannel();
+                    chan.then(function (ch) {
+                        ch.assertQueue(qname);
+                        ch.consume(qname, function (msg) {
+                            var id = msg.content.toString();
+                            if (id) {
+                                model.syncById(id, function (err) {
+                                    if (!err) {
+                                        ch.ack(msg);
+                                    }
+                                });
+                            }
+                            else {
+                                ch.ack(msg);
+                            }
+                        });
+                    }).then(null, function (err) {
+                        console.log(err);
+                    });
+                }
+            });
+        });
+    }
+    mlcl_elastic.getInstance = function () {
+        if (mlcl_elastic._instance === null) {
+            mlcl_elastic._instance = new mlcl_elastic();
         }
-      }
-    }
-  }, callback);
-};
-
-/**
- * Return a boolean indicating whether index exists
- *
- * @param indexname
- * @param callback
- * @see http://www.elasticsearch.org/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-indices-exists
- */
-elastic.prototype.exists = function(indexname, callback) {
-  var elast = getInstance();
-  elast.connection.indices.exists({
-    index: elast.getIndexName(indexname),
-  }, callback);
-};
-
-
-/**
- * Create an index in Elasticsearch.
- *
- * @param indexname
- * @param settings
- * @param mappings
- * @param callback
- * @see http://www.elasticsearch.org/guide/en/elasticsearch/client/javascript-api/current/api-reference.html#api-indices-create
- */
-elastic.prototype.create = function(indexname, settings, mappings, callback) {
-  var elast = getInstance();
-  elast.connection.indices.create({
-    index: elast.getIndexName(indexname),
-    body: {
-      settings: settings,
-      mappings: mappings
-    }
-  }, callback);
-};
-
-/**
- * Check if the index exists and create a new one
- * @param model
- * @param callback
- */
-elastic.prototype.checkCreateIndex = function checkCreateIndex(indexname, settings, mappings, callback) {
-  var elast = getInstance();
-  elast.exists(indexname, function(err, response) {
-    if(!response) {
-      elast.create(indexname, settings, mappings, function (err) {
-        callback(err, true);
-      });
-    } else {
-      callback(err, false);
-    }
-  });
-};
-
-/**
- * Get the mapping
- * @param
- */
-elastic.prototype.getMapping = function getMapping(indexname, callback) {
-  var elast = getInstance();
-  elast.connection.indices.getMapping({
-    index: elast.getIndexName(indexname)
-  }, callback);
-};
-
-/**
- * Extended mongoose plugin
- * @param schema
- * @param options
- */
-elastic.prototype.plugin = function plugin(schema, options) {
-  schema.plugin(mongolastic.plugin, options);
-
-  var mylastic = getInstance();
-
-  schema.statics.searchByUrl = mylastic.searchByUrl;
-  schema.statics.searchById = mylastic.searchById;
-
-  schema.methods.searchByUrl = mylastic.searchByUrl;
-  schema.methods.searchById = mylastic.searchById;
-};
-
-/**
- * Helper for hamornising namespaces
- * @param modelname
- * @returns {string}
- */
-elastic.prototype.getIndexName = function(name) {
-  var elast = getInstance();
-  if(elast.config.prefix) {
-    if(name.indexOf(elast.config.prefix+'-') === 0) {
-      return name.toLowerCase();
-    } else {
-      return elast.config.prefix + '-' + name.toLowerCase();
-    }
-  } else {
-    return name.toLowerCase();
-  }
-};
-
-function init(m) {
-  molecuel = m;
-  return getInstance();
-}
-
-module.exports = init;
+        return mlcl_elastic._instance;
+    };
+    mlcl_elastic.init = function (m) {
+        mlcl_elastic.molecuel = m;
+        return mlcl_elastic.getInstance();
+    };
+    mlcl_elastic.prototype.connect = function (callback) {
+        mongolastic.connect(this.config.prefix, this.config, callback);
+    };
+    mlcl_elastic.prototype.ensureIndex = function (modelname, callback) {
+        var _this = this;
+        mongolastic.indices.exists(function (modelname, err, exists) {
+            if (!exists) {
+                var mappings = {};
+                mappings[modelname] = {
+                    properties: {
+                        url: {
+                            type: 'string',
+                            index: 'not_analyzed'
+                        },
+                        'location': {
+                            'properties': {
+                                geo: {
+                                    type: 'geo_point',
+                                    'lat_lon': true
+                                }
+                            }
+                        }
+                    }
+                };
+                var settings = {};
+                mongolastic.indices.create(modelname, settings, mappings, function (err) {
+                    if (err) {
+                        _this.log('mlcl_elastic', 'Error while creating indices' + err);
+                    }
+                });
+                callback();
+            }
+            else {
+                callback();
+            }
+        });
+    };
+    mlcl_elastic.prototype.index = function (modelname, entry, callback) {
+        mongolastic.index(modelname, entry, callback);
+    };
+    mlcl_elastic.prototype.delete = function (modelname, entry, callback) {
+        mongolastic.delete(modelname, entry, callback);
+    };
+    mlcl_elastic.prototype.deleteIndex = function (modelname, callback) {
+        mongolastic.deleteIndex(modelname, callback);
+    };
+    mlcl_elastic.prototype.sync = function (model, modelname, callback) {
+        mongolastic.sync(model, modelname, callback);
+    };
+    mlcl_elastic.prototype.resync = function (modelname) {
+        var elast = mlcl_elastic.getInstance();
+        var dbmodel = this;
+        if (modelname) {
+            var queuename = 'mlcl::elastic::' + modelname + ':resync';
+            var chan = elast.queue.getChannel();
+            chan.then(function (ch) {
+                ch.assertQueue(queuename);
+                dbmodel.find({}, '_id', function (err, docs) {
+                    if (!err) {
+                        async.each(docs, function (obj, cb) {
+                            ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
+                            cb();
+                        }, function (err) {
+                            if (err) {
+                                elast.log('Error while adding entries for reindex: ' + err);
+                            }
+                            else {
+                                elast.log('added entries to reindex queue');
+                            }
+                        });
+                    }
+                });
+            }).then(null, function (err) {
+                elast.log(err);
+            });
+        }
+    };
+    mlcl_elastic.prototype.search = function (query, callback) {
+        var elast = mlcl_elastic.getInstance();
+        if (query && query.index) {
+            query.index = elast.getIndexName(query.index);
+        }
+        mongolastic.search(query, callback);
+    };
+    mlcl_elastic.prototype.searchByUrl = function (url, lang, callback) {
+        mlcl_elastic.getInstance().search({
+            body: {
+                from: 0,
+                size: 1,
+                filter: {
+                    and: [
+                        {
+                            term: {
+                                url: url
+                            }
+                        },
+                        {
+                            or: [
+                                {
+                                    term: {
+                                        lang: lang
+                                    }
+                                },
+                                {
+                                    missing: {
+                                        field: 'lang'
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }, callback);
+    };
+    mlcl_elastic.prototype.searchById = function (id, callback) {
+        mlcl_elastic.getInstance().search({
+            body: {
+                query: {
+                    filtered: {
+                        filter: {
+                            term: {
+                                _id: id
+                            }
+                        }
+                    }
+                }
+            }
+        }, callback);
+    };
+    mlcl_elastic.prototype.exists = function (indexname, callback) {
+        this.connection.indices.exists({
+            index: this.getIndexName(indexname),
+        }, callback);
+    };
+    mlcl_elastic.prototype.create = function (indexname, settings, mappings, callback) {
+        var elast = mlcl_elastic.getInstance();
+        elast.connection.indices.create({
+            index: elast.getIndexName(indexname),
+            body: {
+                settings: settings,
+                mappings: mappings
+            }
+        }, callback);
+    };
+    mlcl_elastic.prototype.checkCreateIndex = function (indexname, settings, mappings, callback) {
+        var elast = mlcl_elastic.getInstance();
+        elast.exists(indexname, function (err, response) {
+            if (!response) {
+                elast.create(indexname, settings, mappings, function (err) {
+                    callback(err, true);
+                });
+            }
+            else {
+                callback(err, false);
+            }
+        });
+    };
+    mlcl_elastic.prototype.getMapping = function (indexname, callback) {
+        var elast = mlcl_elastic.getInstance();
+        elast.connection.indices.getMapping({
+            index: elast.getIndexName(indexname)
+        }, callback);
+    };
+    mlcl_elastic.prototype.plugin = function (schema, options) {
+        schema.plugin(mongolastic.plugin, options);
+        var mylastic = mlcl_elastic.getInstance();
+        schema.statics.searchByUrl = mylastic.searchByUrl;
+        schema.statics.searchById = mylastic.searchById;
+        schema.statics.resync = mylastic.resync;
+        schema.methods.searchByUrl = mylastic.searchByUrl;
+        schema.methods.searchById = mylastic.searchById;
+    };
+    mlcl_elastic.prototype.getIndexName = function (name) {
+        var elast = mlcl_elastic.getInstance();
+        if (elast.config.prefix) {
+            if (name.indexOf(elast.config.prefix + '-') === 0) {
+                return name.toLowerCase();
+            }
+            else {
+                return elast.config.prefix + '-' + name.toLowerCase();
+            }
+        }
+        else {
+            return name.toLowerCase();
+        }
+    };
+    mlcl_elastic._instance = null;
+    return mlcl_elastic;
+})();
+module.exports = mlcl_elastic.init;
