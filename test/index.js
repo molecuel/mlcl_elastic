@@ -24,6 +24,8 @@ describe('mlcl_elastic', function() {
         util.inherits(mlcl, EventEmitter);
         molecuel = new mlcl();
 
+        molecuel.log = console.log;
+
         molecuel.config = {};
         molecuel.config.search = {
             hosts: ['http://localhost:9200'],

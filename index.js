@@ -2,7 +2,6 @@
 /// <reference path="./typings/mongolastic/mongolastic.d.ts"/>
 /// <reference path="./typings/async/async.d.ts"/>
 var mongolastic = require('mongolastic');
-var async = require('async');
 var mlcl_elastic = (function () {
     function mlcl_elastic() {
         var _this = this;
@@ -44,14 +43,22 @@ var mlcl_elastic = (function () {
                 else {
                     var qname = 'mlcl::elastic::' + modelname + ':resync';
                     var chan = _this.queue.getChannel();
+                    var cnt = 0;
                     chan.then(function (ch) {
                         ch.assertQueue(qname);
+                        ch.prefetch(100);
                         ch.consume(qname, function (msg) {
+                            cnt++;
+                            console.log(cnt);
                             var id = msg.content.toString();
                             if (id) {
                                 model.syncById(id, function (err) {
                                     if (!err) {
                                         ch.ack(msg);
+                                    }
+                                    else {
+                                        console.log(err);
+                                        ch.nack(msg);
                                     }
                                 });
                             }
@@ -133,20 +140,13 @@ var mlcl_elastic = (function () {
             var chan = elast.queue.getChannel();
             chan.then(function (ch) {
                 ch.assertQueue(queuename);
-                dbmodel.find({}, '_id', function (err, docs) {
-                    if (!err) {
-                        async.each(docs, function (obj, cb) {
-                            ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
-                            cb();
-                        }, function (err) {
-                            if (err) {
-                                elast.log('Error while adding entries for reindex: ' + err);
-                            }
-                            else {
-                                elast.log('added entries to reindex queue');
-                            }
-                        });
-                    }
+                var stream = dbmodel.find({}, '_id').stream();
+                stream.on('data', function (obj) {
+                    ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
+                });
+                stream.on('end', function () {
+                    elast.log(new Date());
+                    elast.log('reindex for ' + modelname + ' has been added to queue');
                 });
             }).then(null, function (err) {
                 elast.log(err);
