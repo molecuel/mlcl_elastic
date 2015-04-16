@@ -27,6 +27,17 @@ describe('mlcl_elastic', function() {
         molecuel.log = console.log;
 
         molecuel.config = {};
+
+        molecuel.config.queue = {
+          uri: 'amqp://localhost'
+        };
+
+        if(process.env.NODE_ENV === 'dockerdev') {
+          molecuel.config.queue = {
+            uri: 'amqp://192.168.99.100'
+          };
+        }
+
         molecuel.config.search = {
             hosts: ['http://localhost:9200'],
             prefix: 'mlcl-elastic-unit'

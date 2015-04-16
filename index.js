@@ -43,13 +43,10 @@ var mlcl_elastic = (function () {
                 else {
                     var qname = 'mlcl::elastic::' + modelname + ':resync';
                     var chan = _this.queue.getChannel();
-                    var cnt = 0;
                     chan.then(function (ch) {
                         ch.assertQueue(qname);
-                        ch.prefetch(100);
+                        ch.prefetch(50);
                         ch.consume(qname, function (msg) {
-                            cnt++;
-                            console.log(cnt);
                             var id = msg.content.toString();
                             if (id) {
                                 model.syncById(id, function (err) {
@@ -57,7 +54,7 @@ var mlcl_elastic = (function () {
                                         ch.ack(msg);
                                     }
                                     else {
-                                        console.log(err);
+                                        mlcl_elastic.molecuel.log(err);
                                         ch.nack(msg);
                                     }
                                 });
@@ -67,7 +64,7 @@ var mlcl_elastic = (function () {
                             }
                         });
                     }).then(null, function (err) {
-                        console.log(err);
+                        mlcl_elastic.molecuel.log(err);
                     });
                 }
             });
