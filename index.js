@@ -41,31 +41,33 @@ var mlcl_elastic = (function () {
                     _this.log('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
                 }
                 else {
-                    var qname = 'mlcl::elastic::' + modelname + ':resync';
-                    var chan = _this.queue.getChannel();
-                    chan.then(function (ch) {
-                        ch.assertQueue(qname);
-                        ch.prefetch(50);
-                        ch.consume(qname, function (msg) {
-                            var id = msg.content.toString();
-                            if (id) {
-                                model.syncById(id, function (err) {
-                                    if (!err) {
-                                        ch.ack(msg);
-                                    }
-                                    else {
-                                        mlcl_elastic.molecuel.log(err);
-                                        ch.nack(msg);
-                                    }
-                                });
-                            }
-                            else {
-                                ch.ack(msg);
-                            }
+                    if (mlcl_elastic.molecuel.serverroles && mlcl_elastic.molecuel.serverroles.worker) {
+                        var qname = 'mlcl::elastic::' + modelname + ':resync';
+                        var chan = _this.queue.getChannel();
+                        chan.then(function (ch) {
+                            ch.assertQueue(qname);
+                            ch.prefetch(50);
+                            ch.consume(qname, function (msg) {
+                                var id = msg.content.toString();
+                                if (id) {
+                                    model.syncById(id, function (err) {
+                                        if (!err) {
+                                            ch.ack(msg);
+                                        }
+                                        else {
+                                            mlcl_elastic.molecuel.log(err);
+                                            ch.nack(msg);
+                                        }
+                                    });
+                                }
+                                else {
+                                    ch.ack(msg);
+                                }
+                            });
+                        }).then(null, function (err) {
+                            mlcl_elastic.molecuel.log(err);
                         });
-                    }).then(null, function (err) {
-                        mlcl_elastic.molecuel.log(err);
-                    });
+                    }
                 }
             });
         });
