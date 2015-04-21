@@ -1,6 +1,6 @@
 {
   "name": "mlcl_elastic",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "dependencies": {
     "async": "^0.9.0",
     "mlcl_queue": ">=0.0.1",
