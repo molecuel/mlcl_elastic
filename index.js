@@ -8,13 +8,9 @@ var mlcl_elastic = (function () {
         if (mlcl_elastic._instance) {
             throw new Error("Error: Instantiation failed. Singleton module! Use .getInstance() instead of new.");
         }
-        this.log = console.log;
         mlcl_elastic._instance = this;
         mlcl_elastic.molecuel.on('mlcl::core::init:post', function (molecuel) {
             _this.config = molecuel.config.search;
-            if (molecuel.log) {
-                _this.log = molecuel.log;
-            }
         });
         mlcl_elastic.molecuel.on('mlcl::queue::init:post', function (queue) {
             _this.queue = queue;
@@ -38,7 +34,7 @@ var mlcl_elastic = (function () {
         mlcl_elastic.molecuel.on('mlcl::database::registerModel:post', function (database, modelname, model) {
             mongolastic.registerModel(model, function (err) {
                 if (err) {
-                    _this.log('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
+                    mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
                 }
                 else {
                     if (mlcl_elastic.molecuel.serverroles && mlcl_elastic.molecuel.serverroles.worker) {
@@ -55,7 +51,7 @@ var mlcl_elastic = (function () {
                                             ch.ack(msg);
                                         }
                                         else {
-                                            mlcl_elastic.molecuel.log(err);
+                                            mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
                                             ch.nack(msg);
                                         }
                                     });
@@ -65,7 +61,7 @@ var mlcl_elastic = (function () {
                                 }
                             });
                         }).then(null, function (err) {
-                            mlcl_elastic.molecuel.log(err);
+                            mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
                         });
                     }
                 }
@@ -86,7 +82,6 @@ var mlcl_elastic = (function () {
         mongolastic.connect(this.config.prefix, this.config, callback);
     };
     mlcl_elastic.prototype.ensureIndex = function (modelname, callback) {
-        var _this = this;
         mongolastic.indices.exists(function (modelname, err, exists) {
             if (!exists) {
                 var mappings = {};
@@ -109,7 +104,7 @@ var mlcl_elastic = (function () {
                 var settings = {};
                 mongolastic.indices.create(modelname, settings, mappings, function (err) {
                     if (err) {
-                        _this.log('mlcl_elastic', 'Error while creating indices' + err);
+                        mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while creating indices' + err);
                     }
                 });
                 callback();
@@ -144,11 +139,10 @@ var mlcl_elastic = (function () {
                     ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
                 });
                 stream.on('end', function () {
-                    elast.log(new Date());
-                    elast.log('reindex for ' + modelname + ' has been added to queue');
+                    mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' has been added to queue');
                 });
             }).then(null, function (err) {
-                elast.log(err);
+                mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
             });
         }
     };

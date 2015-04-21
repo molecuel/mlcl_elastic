@@ -10,7 +10,7 @@ class mlcl_elastic {
   private static _instance:mlcl_elastic = null;
   public static molecuel;
   public config:any;
-  public log:Function;
+  public log:any;
   public connection: any;
   // @todo: Add mlcl_queue type here
   public queue: any;
@@ -20,17 +20,11 @@ class mlcl_elastic {
       throw new Error("Error: Instantiation failed. Singleton module! Use .getInstance() instead of new.");
     }
 
-    this.log = console.log;
     mlcl_elastic._instance = this;
 
     // register on init function of core and create connection
     mlcl_elastic.molecuel.on('mlcl::core::init:post', (molecuel) => {
       this.config = molecuel.config.search;
-
-      // setting up logger
-      if(molecuel.log) {
-        this.log = molecuel.log;
-      }
     });
 
     mlcl_elastic.molecuel.on('mlcl::queue::init:post', (queue) => {
@@ -60,7 +54,7 @@ class mlcl_elastic {
       // returns err and model
       mongolastic.registerModel(model, (err) => {
         if(err) {
-          this.log('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
+          mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
         } else {
           if(mlcl_elastic.molecuel.serverroles && mlcl_elastic.molecuel.serverroles.worker) {
             // register task queues
@@ -76,7 +70,7 @@ class mlcl_elastic {
                     if(!err) {
                       ch.ack(msg);
                     } else {
-                      mlcl_elastic.molecuel.log(err);
+                      mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
                       ch.nack(msg);
                     }
                   });
@@ -85,7 +79,7 @@ class mlcl_elastic {
                 }
               });
             }).then(null, function(err) {
-              mlcl_elastic.molecuel.log(err);
+              mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
             });
           }
         }
@@ -147,7 +141,7 @@ class mlcl_elastic {
         var settings = {}; //@todo: make settings configurable from model definition or central config?
         mongolastic.indices.create(modelname, settings, mappings, (err) => {
           if(err) {
-            this.log('mlcl_elastic', 'Error while creating indices' + err);
+            mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while creating indices' + err);
           }
         });
         callback();
@@ -202,12 +196,11 @@ class mlcl_elastic {
         });
 
         stream.on('end', function() {
-          elast.log(new Date());
-          elast.log('reindex for '+modelname+' has been added to queue');
+          mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for '+modelname+' has been added to queue');
         });
 
       }).then(null, function(err) {
-        elast.log(err);
+        mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
       });
     }
   }
