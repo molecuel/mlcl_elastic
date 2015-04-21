@@ -10,7 +10,6 @@ class mlcl_elastic {
   private static _instance:mlcl_elastic = null;
   public static molecuel;
   public config:any;
-  public log:any;
   public connection: any;
   // @todo: Add mlcl_queue type here
   public queue: any;
@@ -31,7 +30,7 @@ class mlcl_elastic {
       this.queue = queue;
       this.connect((err, connection) => {
         if(err) {
-          this.log('mlcl_elastic', 'Error while connecting' + err);
+          mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while connecting' + err);
         } else {
           this.connection = connection;
           mlcl_elastic.molecuel.emit('mlcl::search::connection:success', this);

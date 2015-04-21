@@ -16,7 +16,7 @@ var mlcl_elastic = (function () {
             _this.queue = queue;
             _this.connect(function (err, connection) {
                 if (err) {
-                    _this.log('mlcl_elastic', 'Error while connecting' + err);
+                    mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while connecting' + err);
                 }
                 else {
                     _this.connection = connection;
