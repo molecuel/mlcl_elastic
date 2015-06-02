@@ -180,7 +180,7 @@ class mlcl_elastic {
     mongolastic.sync(model, modelname, callback);
   }
 
-  public resync(modelname: string):void {
+  public resync(modelname: string, query: any):void {
     var elast = mlcl_elastic.getInstance();
     var dbmodel:any = this;
     if(modelname) {
@@ -188,7 +188,13 @@ class mlcl_elastic {
       var chan = elast.queue.getChannel();
       chan.then(function(ch) {
         ch.assertQueue(queuename);
-        var stream = dbmodel.find({},'_id').stream();
+        query = query || {};
+        var stream = dbmodel.find(query,'_id').sort({_id: -1}).stream();
+
+        stream.on('error', function (err) {
+          // handle err
+          mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
+        });
 
         stream.on('data', function(obj:any) {
           ch.sendToQueue(queuename, new Buffer(obj._id.toString()));

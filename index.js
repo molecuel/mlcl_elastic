@@ -126,7 +126,7 @@ var mlcl_elastic = (function () {
     mlcl_elastic.prototype.sync = function (model, modelname, callback) {
         mongolastic.sync(model, modelname, callback);
     };
-    mlcl_elastic.prototype.resync = function (modelname) {
+    mlcl_elastic.prototype.resync = function (modelname, query) {
         var elast = mlcl_elastic.getInstance();
         var dbmodel = this;
         if (modelname) {
@@ -134,7 +134,11 @@ var mlcl_elastic = (function () {
             var chan = elast.queue.getChannel();
             chan.then(function (ch) {
                 ch.assertQueue(queuename);
-                var stream = dbmodel.find({}, '_id').stream();
+                query = query || {};
+                var stream = dbmodel.find(query, '_id').sort({ _id: -1 }).stream();
+                stream.on('error', function (err) {
+                    mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
+                });
                 stream.on('data', function (obj) {
                     ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
                 });
