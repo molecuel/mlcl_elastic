@@ -135,7 +135,7 @@ var mlcl_elastic = (function () {
             chan.then(function (ch) {
                 ch.assertQueue(queuename);
                 query = query || {};
-                var stream = dbmodel.find(query, '_id').sort({ _id: -1 }).stream();
+                var stream = dbmodel.find(query, '_id').lean().sort({ _id: -1 }).stream();
                 stream.on('error', function (err) {
                     mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
                 });

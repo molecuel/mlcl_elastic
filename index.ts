@@ -189,7 +189,7 @@ class mlcl_elastic {
       chan.then(function(ch) {
         ch.assertQueue(queuename);
         query = query || {};
-        var stream = dbmodel.find(query,'_id').sort({_id: -1}).stream();
+        var stream = dbmodel.find(query,'_id').lean().sort({_id: -1}).stream();
 
         stream.on('error', function (err) {
           // handle err
