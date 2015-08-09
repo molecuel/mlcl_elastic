@@ -189,6 +189,7 @@ class mlcl_elastic {
       chan.then(function(ch) {
         ch.assertQueue(queuename);
         query = query || {};
+        var count = 0;
         var stream = dbmodel.find(query,'_id').lean().sort({_id: -1}).stream();
 
         stream.on('error', function (err) {
@@ -197,11 +198,12 @@ class mlcl_elastic {
         });
 
         stream.on('data', function(obj:any) {
+          count++;
           ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
         });
 
         stream.on('end', function() {
-          mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for '+modelname+' has been added to queue');
+          mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for '+modelname+' has been added to queue, ' + count + 'items');
         });
 
       }).then(null, function(err) {
