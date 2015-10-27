@@ -1,6 +1,3 @@
-/// <reference path="./typings/node/node.d.ts"/>
-/// <reference path="./typings/mongolastic/mongolastic.d.ts"/>
-/// <reference path="./typings/async/async.d.ts"/>
 var mongolastic = require('mongolastic');
 var mlcl_elastic = (function () {
     function mlcl_elastic() {
@@ -136,7 +133,7 @@ var mlcl_elastic = (function () {
                 ch.assertQueue(queuename);
                 query = query || {};
                 var count = 0;
-                var stream = dbmodel.find(query, '_id').lean().sort({ _id: -1 }).stream();
+                var stream = dbmodel.find(query, '_id').lean().stream();
                 stream.on('error', function (err) {
                     mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
                 });
