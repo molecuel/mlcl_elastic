@@ -17,5 +17,8 @@
         "./typings/async/async.d.ts",
         "./typings/mongolastic/mongolastic.d.ts",
         "./typings/node/node.d.ts"
-    ]
+    ],
+    "atom": {
+        "rewriteTsconfig": true
+    }
 }

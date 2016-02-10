@@ -1,3 +1,4 @@
+"use strict";
 var mongolastic = require('mongolastic');
 var mlcl_elastic = (function () {
     function mlcl_elastic() {
@@ -152,7 +153,10 @@ var mlcl_elastic = (function () {
     mlcl_elastic.prototype.search = function (query, callback) {
         var elast = mlcl_elastic.getInstance();
         if (query && query.index) {
-            query.index = elast.getIndexName(query.index);
+            var i = query.index.split(',');
+            query.index = i.map(function (index) {
+                return elast.getIndexName(index);
+            }).join(',');
         }
         mongolastic.search(query, callback);
     };
@@ -261,5 +265,5 @@ var mlcl_elastic = (function () {
     };
     mlcl_elastic._instance = null;
     return mlcl_elastic;
-})();
+}());
 module.exports = mlcl_elastic.init;

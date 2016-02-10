@@ -217,14 +217,17 @@ class mlcl_elastic {
    * @param query
    * @param callback
    */
-  public search(query: any, callback: Function):void {
-    var elast = mlcl_elastic.getInstance();
-    if(query && query.index) {
-      query.index = elast.getIndexName(query.index);
-    }
-    mongolastic.search(query, callback);
-  }
-
+   public search(query: any, callback: Function):void {
+     var elast = mlcl_elastic.getInstance();
+     if(query && query.index) {
+       //rewrite index
+       var i = query.index.split(',');
+       query.index = i.map(function(index) {
+         return elast.getIndexName(index);
+       }).join(',');
+     }
+     mongolastic.search(query, callback);
+   }
 
   /**
    * Gets a entry by url and language
