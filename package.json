@@ -1,9 +1,9 @@
 {
   "name": "mlcl_elastic",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "dependencies": {
     "async": "^0.9.0",
-    "mlcl_queue": ">=0.0.1",
+    "mlcl_queue": ">=1.1.0",
     "mongolastic": ">=0.6.0"
   },
   "engines": {
@@ -18,12 +18,13 @@
     "cms"
   ],
   "devDependencies": {
-    "mocha": "*",
-    "should": ">= 0.0.1",
+    "@types/node": "^9.4.6",
     "assert": ">=0.0.1",
-    "mongoose": ">=0.0.1",
+    "mlcl_database": ">=0.0.1",
+    "mocha": "*",
     "mocha-jshint": ">=0.0.1",
-    "mlcl_database": ">=0.0.1"
+    "mongoose": ">=0.0.1",
+    "should": ">= 0.0.1"
   },
   "scripts": {
     "test": "mocha -R spec"

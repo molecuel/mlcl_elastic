@@ -1,7 +1,7 @@
 {
     "version": "1.4.1",
     "compilerOptions": {
-        "target": "es5",
+        "target": "es6",
         "module": "commonjs",
         "declaration": false,
         "noImplicitAny": false,
@@ -16,7 +16,6 @@
         "./index.ts",
         "./typings/async/async.d.ts",
         "./typings/mongolastic/mongolastic.d.ts",
-        "./typings/node/node.d.ts"
     ],
     "atom": {
         "rewriteTsconfig": true

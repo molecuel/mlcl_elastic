@@ -32,15 +32,7 @@ describe('mlcl_elastic', function() {
 
         molecuel.config = {};
 
-        molecuel.config.queue = {
-          uri: 'amqp://localhost'
-        };
-
-        if(process.env.NODE_ENV === 'dockerdev') {
-          molecuel.config.queue = {
-            uri: 'amqp://192.168.99.100'
-          };
-        }
+        molecuel.config.queue = {};
 
         molecuel.config.search = {
             hosts: ['http://localhost:9200'],
@@ -50,16 +42,6 @@ describe('mlcl_elastic', function() {
             type: 'mongodb',
             uri: 'mongodb://localhost/mlcl-elastic-unit'
         };
-
-        molecuel.config.queue = {
-            uri: 'amqp://localhost'
-        };
-
-        if (process.env.NODE_ENV === 'dockerdev') {
-            molecuel.config.queue = {
-                uri: 'amqp://192.168.99.100'
-            };
-        }
 
         mongo = mlcl_database(molecuel);
         mlcl_elastic(molecuel);
@@ -122,8 +104,8 @@ describe('mlcl_elastic', function() {
                     type: String,
                     elastic: {
                         mapping: {
-                            type: 'string',
-                            index: 'not_analyzed'
+                            type: 'keyword',
+                            index: true
                         }
                     }
                 },
@@ -239,12 +221,7 @@ describe('mlcl_elastic', function() {
 
         it('should create a new index with a mapping', function(done) {
             var mapping = {
-                'tweet': {
-                    '_ttl': {
-                        'enabled': true,
-                        'default': '10s'
-                    }
-                }
+                'tweet': {}
             };
             searchcon.checkCreateIndex('tweet', {}, mapping,
                 function(error) {
@@ -256,9 +233,7 @@ describe('mlcl_elastic', function() {
         it('should read the created mapping', function(done) {
             searchcon.getMapping('tweet', function(error, result) {
                 should.not.exists(error);
-                result['mlcl-elastic-unit-tweet'].mappings.tweet
-                    ._ttl.enabled.should
-                    .be.ok;
+                result['mlcl-elastic-unit-tweet'].mappings.tweet.should.exists;
                 done();
             });
         });

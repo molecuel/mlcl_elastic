@@ -1,9 +1,6 @@
-/// <reference path="./typings/node/node.d.ts"/>
-/// <reference path="./typings/mongolastic/mongolastic.d.ts"/>
-/// <reference path="./typings/async/async.d.ts"/>
-
 import mongolastic = require('mongolastic');
 import async = require('async');
+import { promisify } from 'util';
 
 class mlcl_elastic {
 
@@ -49,38 +46,36 @@ class mlcl_elastic {
       }
     });
 
-    mlcl_elastic.molecuel.on('mlcl::database::registerModel:post', (database, modelname, model) => {
+    mlcl_elastic.molecuel.on('mlcl::database::registerModel:post', async (database, modelname, model) => {
       // returns err and model
-      mongolastic.registerModel(model, (err) => {
+      mongolastic.registerModel(model, async (err) => {
         if(err) {
           mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
         } else {
-          if(mlcl_elastic.molecuel.serverroles && mlcl_elastic.molecuel.serverroles.worker) {
-            // register task queues
-            var qname = 'mlcl::elastic::'+modelname+':resync';
-            var chan = this.queue.getChannel();
-            chan.then(function(ch) {
-              ch.assertQueue(qname);
-              ch.prefetch(50);
-              ch.consume(qname, function(msg) {
-                var id = msg.content.toString();
-                if(id) {
-                  model.syncById(id, function(err) {
-                    if(!err) {
-                      ch.ack(msg);
-                    } else {
-                      mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                      ch.nack(msg);
-                    }
-                  });
-                } else {
-                  ch.ack(msg);
-                }
+          var qname = 'mlcl__elastic__' + modelname + '_resync';
+          this.queue.ensureQueue(qname, (err) => {
+            if(!err) {
+              this.queue.client.createReceiver(qname).then((receiver) => {
+                receiver.on('message', (msg) => {
+                  var id = msg.body.toString();
+                  if(id) {
+                    model.syncById(id, async (err) => {
+                      if(!err) {
+                        receiver.accept(msg);
+                      } else {
+                        mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
+                        receiver.release(msg);
+                      }
+                    });
+                  }
+                });
+              }).error((qerr) => {
+                mlcl_elastic.molecuel.log.error('mlcl_elastic', qerr);
               });
-            }).then(null, function(err) {
+            } else {
               mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-            });
-          }
+            }
+          })
         }
       });
     });
@@ -115,8 +110,8 @@ class mlcl_elastic {
         mappings[modelname] = {
           properties: {
             url: {
-              type: 'string',
-              index: 'not_analyzed' // by default url information must be not_analyzed,
+              type: 'keyword',
+              index: true
             },
             'location': {
               'properties': {
@@ -180,35 +175,31 @@ class mlcl_elastic {
     mongolastic.sync(model, modelname, callback);
   }
 
-  public resync(modelname: string, query: any):void {
+  public resync(modelname: string, query: any): void  {
     var elast = mlcl_elastic.getInstance();
     var dbmodel:any = this;
     if(modelname) {
-      var queuename = 'mlcl::elastic::'+modelname+':resync';
-      var chan = elast.queue.getChannel();
-      chan.then(function(ch) {
-        ch.assertQueue(queuename);
-        query = query || {};
+      const queuename = 'mlcl__elastic__' + modelname + '_resync';
+      elast.queue.client.createSender(queuename).then((sender) => {
         var count = 0;
         var stream = dbmodel.find(query,'_id').lean().stream();
-
+  
         stream.on('error', function (err) {
           // handle err
           mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
         });
-
-        stream.on('data', function(obj:any) {
+  
+        stream.on('data', (obj:any) => {
           count++;
-          ch.sendToQueue(queuename, new Buffer(obj._id.toString()));
+          sender.send(obj._id.toString());
         });
-
+      
         stream.on('end', function() {
           mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for '+modelname+' has been added to queue, ' + count + 'items');
         });
-
-      }).then(null, function(err) {
+      }).error((err) => {
         mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-      });
+      })
     }
   }
 
@@ -239,28 +230,30 @@ class mlcl_elastic {
       body: {
         from: 0,
         size: 1,
-        filter : {
-          and: [
-            {
+        query : {
+          bool: {
+            filter: {
               term: {
                 url: url
-              }
+              }  
             },
-            {
-              or: [
-                {
-                  term : {
-                    lang : lang
-                  }
-                },
-                {
-                  missing: {
-                    field: 'lang'
+            should: [
+              {
+                term : {
+                  lang : lang
+                }
+              },
+              {
+                bool: {
+                  must_not: {
+                    exists: {
+                      field: 'lang'
+                    }
                   }
                 }
-              ]
-            }
-          ]
+              }
+            ]
+          }
         }
       }
     }, callback);
@@ -275,13 +268,9 @@ class mlcl_elastic {
     mlcl_elastic.getInstance().search({
       body: {
         query: {
-          filtered : {
-            filter : {
-              term : {
-                _id : id
-              }
+            term : {
+              _id : id
             }
-          }
         }
       }
     }, callback);
