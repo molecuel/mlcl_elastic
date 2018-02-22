@@ -27,7 +27,7 @@
     "should": ">= 0.0.1"
   },
   "scripts": {
-    "test": "mocha -R spec"
+    "test": "mocha -R spec --exit"
   },
   "description": "molecuel CMS - elasticsearch core module",
   "main": "index.js",
