@@ -183,26 +183,30 @@ class mlcl_elastic {
     if(modelname) {
       const queuename = 'mlcl__elastic_resync';
       this.queue.ensureQueue(queuename, (err) => {
-        elast.queue.client.createSender(queuename).then((sender) => {
-          var count = 0;
-          var stream = dbmodel.find(query,'_id').lean().stream();
-    
-          stream.on('error', function (err) {
-            // handle err
+        if(!err) {
+          elast.queue.client.createSender(queuename).then((sender) => {
+            var count = 0;
+            var stream = dbmodel.find(query,'_id').lean().stream();
+      
+            stream.on('error', function (err) {
+              // handle err
+              mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
+            });
+      
+            stream.on('data', (obj:any) => {
+              count++;
+              sender.send({id: obj._id.toString(), model: modelname});
+            });
+          
+            stream.on('end', function() {
+              mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for '+modelname+' has been added to queue, ' + count + 'items');
+            });
+          }).error((err) => {
             mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-          });
-    
-          stream.on('data', (obj:any) => {
-            count++;
-            sender.send({id: obj._id.toString(), model: modelname});
-          });
-        
-          stream.on('end', function() {
-            mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for '+modelname+' has been added to queue, ' + count + 'items');
-          });
-        }).error((err) => {
+          })
+        } else {
           mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-        })
+        }
       });
     }
   }
