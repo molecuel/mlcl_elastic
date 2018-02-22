@@ -182,7 +182,7 @@ class mlcl_elastic {
     var dbmodel:any = this;
     if(modelname) {
       const queuename = 'mlcl__elastic_resync';
-      this.queue.ensureQueue(queuename, (err) => {
+      elast.queue.ensureQueue(queuename, (err) => {
         if(!err) {
           elast.queue.client.createSender(queuename).then((sender) => {
             var count = 0;
