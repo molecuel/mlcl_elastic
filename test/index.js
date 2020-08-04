@@ -264,13 +264,6 @@ describe('mlcl_elastic', function() {
             done();
         });
 
-        it('should resync all elements', function(done) {
-            model.resync('test');
-            setTimeout(function() {
-                done();
-            }, 1000);
-        });
-
         after(function(done) {
             dbcon.database.connection.db.dropDatabase(function(
                 error) {
