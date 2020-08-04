@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -104,30 +105,6 @@ class mlcl_elastic {
     sync(model, modelname, callback) {
         mongolastic.sync(model, modelname, callback);
     }
-    resync(modelname, query) {
-        var elast = mlcl_elastic.getInstance();
-        var dbmodel = this;
-        if (modelname) {
-            var count = 0;
-            var stream = dbmodel.find(query, '_id').lean().stream();
-            stream.on('error', function (err) {
-                mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-            });
-            stream.on('data', (obj) => {
-                mongolastic.syncById(mlcl_elastic.models.get(modelname), modelname, obj._id.toString(), (err) => {
-                    if (!err) {
-                        count++;
-                    }
-                    else {
-                        mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                    }
-                });
-            });
-            stream.on('end', function () {
-                mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' is running, ' + count + 'items');
-            });
-        }
-    }
     search(query, callback) {
         var elast = mlcl_elastic.getInstance();
         if (query && query.index) {
@@ -221,7 +198,6 @@ class mlcl_elastic {
         var mylastic = mlcl_elastic.getInstance();
         schema.statics.searchByUrl = mylastic.searchByUrl;
         schema.statics.searchById = mylastic.searchById;
-        schema.statics.resync = mylastic.resync;
         schema.methods.searchByUrl = mylastic.searchByUrl;
         schema.methods.searchById = mylastic.searchById;
     }

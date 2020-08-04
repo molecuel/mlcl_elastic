@@ -152,34 +152,6 @@ class mlcl_elastic {
     mongolastic.sync(model, modelname, callback);
   }
 
-  public resync(modelname: string, query: any): void {
-    var elast = mlcl_elastic.getInstance();
-    var dbmodel: any = this;
-    if (modelname) {
-      var count = 0;
-      var stream = dbmodel.find(query, '_id').lean().stream();
-
-      stream.on('error', function (err) {
-        // handle err
-        mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-      });
-
-      stream.on('data', (obj: any) => {
-        mongolastic.syncById(mlcl_elastic.models.get(modelname), modelname, obj._id.toString(), (err) => {
-          if (!err) {
-            count++;
-          } else {
-            mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-          }
-        });
-      });
-
-      stream.on('end', function () {
-        mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' is running, ' + count + 'items');
-      });
-    }
-  }
-
   /**
    * Search for objects in elasticsearch
    * @param query
@@ -330,8 +302,6 @@ class mlcl_elastic {
 
     schema.statics.searchByUrl = mylastic.searchByUrl;
     schema.statics.searchById = mylastic.searchById;
-
-    schema.statics.resync = mylastic.resync;
 
     schema.methods.searchByUrl = mylastic.searchByUrl;
     schema.methods.searchById = mylastic.searchById;
