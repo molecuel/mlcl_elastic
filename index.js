@@ -16,9 +16,6 @@ class mlcl_elastic {
         mlcl_elastic._instance = this;
         mlcl_elastic.molecuel.on('mlcl::core::init:post', (molecuel) => {
             this.config = molecuel.config.search;
-        });
-        mlcl_elastic.molecuel.on('mlcl::queue::init:post', (queue) => {
-            this.queue = queue;
             this.connect((err, connection) => {
                 if (err) {
                     mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while connecting' + err);
@@ -42,33 +39,8 @@ class mlcl_elastic {
                     mlcl_elastic.molecuel.log.error('mlcl_elastic', 'Error while registering model to elasticsearch' + err);
                 }
                 else {
-                    if (mlcl_elastic.molecuel.serverroles && mlcl_elastic.molecuel.serverroles.worker) {
-                        var qname = 'mlcl__elastic__' + modelname + '_resync';
-                        this.queue.ensureQueue(qname, (err) => {
-                            if (!err) {
-                                this.queue.client.createReceiver(qname).then((receiver) => {
-                                    receiver.on('message', (msg) => {
-                                        var id = msg.body.toString();
-                                        if (id) {
-                                            model.syncById(id, (err) => __awaiter(this, void 0, void 0, function* () {
-                                                if (!err) {
-                                                    receiver.accept(msg);
-                                                }
-                                                else {
-                                                    mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                                                    receiver.release(msg);
-                                                }
-                                            }));
-                                        }
-                                    });
-                                }).error((qerr) => {
-                                    mlcl_elastic.molecuel.log.error('mlcl_elastic', qerr);
-                                });
-                            }
-                            else {
-                                mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                            }
-                        });
+                    if (!mlcl_elastic.models.has(modelname)) {
+                        mlcl_elastic.models.set(modelname, model);
                     }
                 }
             }));
@@ -136,29 +108,23 @@ class mlcl_elastic {
         var elast = mlcl_elastic.getInstance();
         var dbmodel = this;
         if (modelname) {
-            const queuename = 'mlcl__elastic_resync';
-            elast.queue.ensureQueue(queuename, (err) => {
-                if (!err) {
-                    elast.queue.client.createSender(queuename).then((sender) => {
-                        var count = 0;
-                        var stream = dbmodel.find(query, '_id').lean().stream();
-                        stream.on('error', function (err) {
-                            mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                        });
-                        stream.on('data', (obj) => {
-                            count++;
-                            sender.send({ id: obj._id.toString(), model: modelname });
-                        });
-                        stream.on('end', function () {
-                            mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' has been added to queue, ' + count + 'items');
-                        });
-                    }).error((err) => {
+            var count = 0;
+            var stream = dbmodel.find(query, '_id').lean().stream();
+            stream.on('error', function (err) {
+                mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
+            });
+            stream.on('data', (obj) => {
+                mongolastic.syncById(mlcl_elastic.models.get(modelname), modelname, obj._id.toString(), (err) => {
+                    if (!err) {
+                        count++;
+                    }
+                    else {
                         mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                    });
-                }
-                else {
-                    mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-                }
+                    }
+                });
+            });
+            stream.on('end', function () {
+                mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' is running, ' + count + 'items');
             });
         }
     }
@@ -275,4 +241,9 @@ class mlcl_elastic {
     }
 }
 mlcl_elastic._instance = null;
-module.exports = mlcl_elastic.init;
+mlcl_elastic.models = new Map();
+function init(m) {
+    return mlcl_elastic.init(m);
+}
+;
+module.exports = init;

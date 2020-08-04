@@ -6,7 +6,6 @@ var should = require('should'),
     util = require('util'),
     EventEmitter = require('events').EventEmitter,
     mlcl_database = require('mlcl_database'),
-    mlcl_queue = require('mlcl_queue'),
     mlcl_elastic = require('../');
 
 describe('mlcl_elastic', function() {
@@ -45,7 +44,6 @@ describe('mlcl_elastic', function() {
 
         mongo = mlcl_database(molecuel);
         mlcl_elastic(molecuel);
-        mlcl_queue(molecuel);
 
         testobjEn = {
             '_id': '98098098',

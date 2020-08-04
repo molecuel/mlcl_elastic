@@ -7,5 +7,6 @@ node_js:
 before_install:
   - sudo rm -vf /etc/apt/sources.list.d/*riak*
   - sudo apt-get update
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.2.deb && sudo dpkg -i --force-confnew elasticsearch-6.2.2.deb && sudo service elasticsearch restart
 before_script:
   - sleep 30
