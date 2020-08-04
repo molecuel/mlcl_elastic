@@ -155,8 +155,10 @@ class mlcl_elastic {
   public resync(modelname: string, query: any): void {
     var elast = mlcl_elastic.getInstance();
     var dbmodel: any = this;
+    var dataCache = [];
+    var batchSize = Math.floor(elast.config.resyncBatchSize / 2) || 20;
+    var count = 0;
     if (modelname) {
-      var count = 0;
       var stream = dbmodel.find(query, '_id').lean().stream();
 
       stream.on('error', function (err) {
@@ -165,17 +167,36 @@ class mlcl_elastic {
       });
 
       stream.on('data', (obj: any) => {
-        mongolastic.syncById(mlcl_elastic.models.get(modelname), modelname, obj._id.toString(), (err) => {
-          if (!err) {
-            count++;
-          } else {
-            mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
-          }
-        });
+        dataCache = dataCache.concat(obj);
       });
 
       stream.on('end', function () {
-        mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' is running, ' + count + 'items');
+        mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindex for ' + modelname + ' is running, ' + dataCache.length + ' items.');
+        const chunkedData = ((arr, chunkSize) => {
+          var R = [];
+          for (var i = 0, len = arr.length; i < len; i += chunkSize)
+            R.push(arr.slice(i, i + chunkSize));
+          return R;
+        })(dataCache, batchSize);
+        var timeout = 0;
+        for (const chunk of chunkedData) {
+          timeout += 0.5e3;
+          setTimeout(() => {
+            Promise.all(chunk.map(obj => new Promise(resolve => {
+              mongolastic.syncById(mlcl_elastic.models.get(modelname), modelname, obj._id.toString(), (err) => {
+                if (err) {
+                  mlcl_elastic.molecuel.log.error('mlcl_elastic', err);
+                  resolve(0);
+                } else {
+                  resolve(1);
+                }
+              });
+            })) as number[]).then((vals) => count += vals.reduce((a,b)=>a+b,0))
+          }, timeout);
+        }
+        setTimeout(() => {
+          mlcl_elastic.molecuel.log.info('mlcl_elastic', 'reindexed '+ count + ' ' + modelname + 's;')
+        }, timeout + 1e3);
       });
     }
   }
