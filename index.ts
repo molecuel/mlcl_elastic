@@ -93,8 +93,7 @@ class mlcl_elastic {
             'location': {
               'properties': {
                 geo: {
-                  type: 'geo_point',
-                  'lat_lon': true
+                  type: 'geo_point'
                 }
               }
             }
